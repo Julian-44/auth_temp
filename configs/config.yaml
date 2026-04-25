@@ -1,0 +1,20 @@
+server:
+  port: ":8080"
+
+jwt:
+  access_secret: "your-access-secret-key"
+  refresh_secret: "your-refresh-secret-key"
+  access_ttl_minutes: 15
+  refresh_ttl_hours: 168 # 7 days
+
+database:
+  type: "sqlite" # sqlite or postgres
+  sqlite:
+    path: "./auth.db"
+  postgres:
+    host: "localhost"
+    port: 5432
+    user: "postgres"
+    password: "postgres"
+    dbname: "authdb"
+    sslmode: "disable"
