@@ -27,13 +27,11 @@ func NewAuthUseCase(userRepo repository.UserRepository, jwtService *utils.JWTSer
 }
 
 func (uc *authUseCase) Register(ctx context.Context, email, password string) (int64, error) {
-	// Check if user already exists
 	existing, _ := uc.userRepo.GetByEmail(ctx, email)
 	if existing != nil {
 		return 0, domain.ErrUserExists
 	}
 
-	// Hash password
 	hashed, err := utils.HashPassword(password)
 	if err != nil {
 		return 0, err
@@ -79,7 +77,6 @@ func (uc *authUseCase) RefreshTokens(ctx context.Context, refreshToken string) (
 		return "", "", err
 	}
 
-	// Verify user still exists
 	_, err = uc.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return "", "", err

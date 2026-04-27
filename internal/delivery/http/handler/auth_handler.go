@@ -1,4 +1,5 @@
-package http
+// internal/delivery/http/handler/auth_handler.go
+package handler
 
 import (
 	"auth-server/internal/dto"
@@ -8,40 +9,40 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type AuthHandlers struct {
+type AuthHandler struct {
 	authService service.AuthService
 }
 
-func NewAuthHandlers(authService service.AuthService) *AuthHandlers {
-	return &AuthHandlers{authService: authService}
+func NewAuthHandler(authService service.AuthService) *AuthHandler {
+	return &AuthHandler{authService: authService}
 }
 
-func (h *AuthHandlers) Register(c *gin.Context) {
+func (h *AuthHandler) Register(c *gin.Context) {
 	var input dto.RegisterInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, dto.MessageResponse{Message: "Invalid input: " + err.Error()})
+		c.JSON(http.StatusBadRequest, dto.MessageResponse{Message: "invalid input: " + err.Error()})
 		return
 	}
 
 	resp, err := h.authService.Register(c.Request.Context(), input)
 	if err != nil {
-		// обработка ошибок
+		// обработка доменных ошибок
 		c.JSON(http.StatusBadRequest, dto.MessageResponse{Message: err.Error()})
 		return
 	}
 	c.JSON(http.StatusCreated, resp)
 }
 
-func (h *AuthHandlers) Login(c *gin.Context) {
+func (h *AuthHandler) Login(c *gin.Context) {
 	var input dto.LoginInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, dto.MessageResponse{Message: "Invalid input"})
+		c.JSON(http.StatusBadRequest, dto.MessageResponse{Message: "invalid input"})
 		return
 	}
 
 	resp, err := h.authService.Login(c.Request.Context(), input)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, dto.MessageResponse{Message: "Invalid credentials"})
+		c.JSON(http.StatusUnauthorized, dto.MessageResponse{Message: "invalid credentials"})
 		return
 	}
 	c.JSON(http.StatusOK, resp)

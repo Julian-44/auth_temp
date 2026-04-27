@@ -1,24 +1,30 @@
 package http
 
 import (
+	"auth-server/internal/delivery/http/middleware"
 	"auth-server/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(router *gin.Engine, handlers *AuthHandlers, jwtService *utils.JWTService) {
-	// Публичные маршруты
-	authGroup := router.Group("/")
+func SetupRoutes(router *gin.Engine, authHandlers *AuthHandlers, jwtService *utils.JWTService) {
+	api := router.Group("/api")
 	{
-		authGroup.POST("/register", handlers.Register)
-		authGroup.POST("/login", handlers.Login)
-		authGroup.POST("/refresh", handlers.Refresh)
+		auth := api.Group("/auth")
+		{
+			auth.POST("/register", authHandlers.Register)
+			auth.POST("/login", authHandlers.Login)
+			auth.GET("/profile", middleware.AuthMiddleware(jwtService), profileHandler) // profileHandler нужно определить или создать
+		}
 	}
+}
 
-	// Защищённые маршруты
-	protected := router.Group("/")
-	protected.Use(AuthMiddleware(jwtService))
-	{
-		protected.GET("/protected", handlers.ProtectedExample)
+// временный profileHandler
+func profileHandler(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(401, gin.H{"error": "unauthorized"})
+		return
 	}
+	c.JSON(200, gin.H{"user_id": userID})
 }

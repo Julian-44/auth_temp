@@ -11,8 +11,8 @@ import (
 type JWTService struct {
 	accessSecret  string
 	refreshSecret string
-	accessTTL     time.Duration // minutes
-	refreshTTL    time.Duration // hours
+	accessTTL     time.Duration
+	refreshTTL    time.Duration
 }
 
 type Claims struct {

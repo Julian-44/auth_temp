@@ -18,7 +18,7 @@ import (
 	"auth-server/internal/repository"
 	postgresRepo "auth-server/internal/repository/postgres"
 	sqliteRepo "auth-server/internal/repository/sqlite"
-	"auth-server/internal/usecase"
+	"auth-server/internal/service"
 	"auth-server/internal/utils"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -26,25 +26,21 @@ import (
 )
 
 func main() {
-	// Load config
 	cfg, err := config.LoadConfig("configs/config.yaml")
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	// Initialize database
 	db, err := initDB(cfg)
 	if err != nil {
 		log.Fatalf("Failed to init database: %v", err)
 	}
 	defer db.Close()
 
-	// Run migrations
 	if err := runMigrations(db, cfg.Database.Type); err != nil {
 		log.Fatalf("Migration failed: %v", err)
 	}
 
-	// Setup repository
 	var userRepo repository.UserRepository
 	switch cfg.Database.Type {
 	case "sqlite":
@@ -55,7 +51,6 @@ func main() {
 		log.Fatalf("Unsupported database type: %s", cfg.Database.Type)
 	}
 
-	// JWT service
 	jwtService := utils.NewJWTService(
 		cfg.JWT.AccessSecret,
 		cfg.JWT.RefreshSecret,
@@ -63,21 +58,16 @@ func main() {
 		cfg.JWT.RefreshTTL,
 	)
 
-	// Usecase
-	authUC := usecase.NewAuthUseCase(userRepo, jwtService)
+	authService := service.NewAuthService(userRepo, jwtService)
+	authHandlers := httpdelivery.NewAuthHandlers(authService)
 
-	// Handlers & routes
-	authHandlers := httpdelivery.NewAuthHandlers(authUC)
-
-	// Gin setup
-	gin.SetMode(gin.ReleaseMode) // или gin.DebugMode для разработки
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 
 	httpdelivery.SetupRoutes(router, authHandlers, jwtService)
 
-	// HTTP server
 	srv := &http.Server{
 		Addr:         cfg.Server.Port,
 		Handler:      router,
@@ -86,7 +76,6 @@ func main() {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	// Graceful shutdown
 	go func() {
 		log.Printf("Server starting on %s", cfg.Server.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -107,7 +96,6 @@ func main() {
 	log.Println("Server exited gracefully")
 }
 
-// initDB и runMigrations без изменений (см. предыдущий ответ)
 func initDB(cfg *config.Config) (*sql.DB, error) {
 	switch cfg.Database.Type {
 	case "sqlite":
